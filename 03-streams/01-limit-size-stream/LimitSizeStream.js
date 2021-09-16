@@ -6,16 +6,22 @@ class LimitSizeStream extends stream.Transform {
     super(options);
 
     this.limit = options.limit;
-    this.currentByteLength = 0;
+    this.size = 0;
+    this.isObjectMode = !!options.readableObjectMode;
   }
 
   _transform(chunk, encoding, callback) {
-    if (this.currentByteLength + chunk.byteLength > this.limit) {
-      callback(new LimitExceededError());
+    if (this.isObjectMode) {
+      this.size += 1;
+    } else {
+      this.size += chunk.length;
     }
 
-    this.currentByteLength += chunk.byteLength;
-    callback(null, chunk);
+    if (this.size > this.limit) {
+      callback(new LimitExceededError());
+    } else {
+      callback(null, chunk);
+    }
   }
 }
 
