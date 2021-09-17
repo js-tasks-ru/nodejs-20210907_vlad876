@@ -39,7 +39,9 @@ server.on('request', (req, res) => {
             if (err instanceof LimitExceededError) {
               res.statusCode = 413;
               res.end('File is too big');
-              fs.unlink(filepath);
+              fs.unlink(filepath, (err) => {
+                if (err) console.log(err);
+              });
             } else {
               res.statusCode = 500;
               res.end('Something went wrong');
@@ -49,7 +51,9 @@ server.on('request', (req, res) => {
           req.on('aborted', () => {
             limitSizeStream.destroy();
             writableStream.destroy();
-            fs.unlink(filepath);
+            fs.unlink(filepath, (err) => {
+              if (err) console.log(err);
+            });
           });
 
           req.on('end', () => {
