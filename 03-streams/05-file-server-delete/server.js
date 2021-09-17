@@ -13,21 +13,22 @@ server.on('request', (req, res) => {
       if (req.url.split('/').length > 2) {
         res.statusCode = 400;
         res.end(`Nested folders are not supported`);
+      } else {
+        const filepath = path.join(__dirname, 'files', pathname);
+
+        fs.unlink(filepath, (err) => {
+          if (err && err.code == 'ENOENT') {
+            res.statusCode = 404;
+            res.end(`File ${pathname} not found`);
+          } else if (err) {
+            res.statusCode = 500;
+            res.end('Something went wrong');
+          } else {
+            res.end('File successfully removed');
+          }
+        });
       }
 
-      const filepath = path.join(__dirname, 'files', pathname);
-
-      fs.unlink(filepath, (err) => {
-        if (err && err.code == 'ENOENT') {
-          res.statusCode = 404;
-          res.end(`File ${pathname} not found`);
-        } else if (err) {
-          res.statusCode = 500;
-          res.end('Something went wrong');
-        } else {
-          res.end('File successfully removed');
-        }
-      });
       break;
 
     default:

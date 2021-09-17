@@ -16,47 +16,47 @@ server.on('request', (req, res) => {
       if (req.url.split('/').length > 2) {
         res.statusCode = 400;
         res.end(`Nested folders are not supported`);
-      }
-
-      const filepath = path.join(__dirname, 'files', pathname);
-      const isExisting = fs.existsSync(filepath);
-
-      if (isExisting) {
-        res.statusCode = 409;
-        res.end('File already exists');
       } else {
-        const writableStream = fs.createWriteStream(filepath);
-        const limitSizeStream = new LimitSizeStream({limit: ONE_MB});
+        const filepath = path.join(__dirname, 'files', pathname);
+        const isExisting = fs.existsSync(filepath);
 
-        req.pipe(limitSizeStream).pipe(writableStream);
+        if (isExisting) {
+          res.statusCode = 409;
+          res.end('File already exists');
+        } else {
+          const writableStream = fs.createWriteStream(filepath);
+          const limitSizeStream = new LimitSizeStream({limit: ONE_MB});
 
-        writableStream
-            .on('error', (err) => {
+          req.pipe(limitSizeStream).pipe(writableStream);
+
+          writableStream
+              .on('error', (err) => {
+                res.statusCode = 500;
+                res.end('Something went wrong');
+              });
+
+          limitSizeStream.on('error', (err) => {
+            if (err instanceof LimitExceededError) {
+              res.statusCode = 413;
+              res.end('File is too big');
+              fs.unlink(filepath);
+            } else {
               res.statusCode = 500;
               res.end('Something went wrong');
-            });
+            }
+          });
 
-        limitSizeStream.on('error', (err) => {
-          if (err instanceof LimitExceededError) {
-            fs.unlinkSync(filepath);
-            res.statusCode = 413;
-            res.end('File is too big');
-          } else {
-            res.statusCode = 500;
-            res.end('Something went wrong');
-          }
-        });
+          req.on('aborted', () => {
+            limitSizeStream.destroy();
+            writableStream.destroy();
+            fs.unlink(filepath);
+          });
 
-        req.on('aborted', () => {
-          limitSizeStream.destroy();
-          writableStream.destroy();
-          fs.unlinkSync(filepath);
-        });
-
-        req.on('end', () => {
-          res.statusCode = 201;
-          res.end('File saved');
-        });
+          req.on('end', () => {
+            res.statusCode = 201;
+            res.end('File saved');
+          });
+        }
       }
       break;
 
