@@ -10,11 +10,21 @@ module.exports = class Validator {
       const rules = this.rules[field];
 
       const value = obj[field];
+
+      if (!value) {
+        errors.push({field, error: `no field: ${field}, specified in validation rules was passed`});
+        continue;
+      }
       const type = typeof value;
 
       if (type !== rules.type) {
         errors.push({field, error: `expect ${rules.type}, got ${type}`});
-        return errors;
+        continue;
+      }
+
+      if (rules.min > rules.max) {
+        errors.push({field, error: `min: ${rules.min} can not be more than max: ${rules.max}`});
+        continue;
       }
 
       switch (type) {
@@ -31,7 +41,7 @@ module.exports = class Validator {
             errors.push({field, error: `too little, expect ${rules.min}, got ${value}`});
           }
           if (value > rules.max) {
-            errors.push({field, error: `too big, expect ${rules.min}, got ${value}`});
+            errors.push({field, error: `too big, expect ${rules.max}, got ${value}`});
           }
           break;
       }
