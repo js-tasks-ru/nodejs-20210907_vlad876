@@ -1,10 +1,10 @@
 const path = require('path');
 const Koa = require('koa');
 const Router = require('koa-router');
-const Session = require('./models/Session');
-const {v4: uuid} = require('uuid');
 const handleMongooseValidationError = require('./libs/validationErrors');
+const addLoginToContext = require('./libs/addLoginToContext');
 const mustBeAuthenticated = require('./libs/mustBeAuthenticated');
+const updateTokenExpiration = require('./libs/updateTokenExpiration');
 const {login} = require('./controllers/login');
 const {oauth, oauthCallback} = require('./controllers/oauth');
 const {me} = require('./controllers/me');
@@ -29,31 +29,18 @@ app.use(async (ctx, next) => {
   }
 });
 
-app.use((ctx, next) => {
-  ctx.login = async function(user) {
-    const token = uuid();
-
-    return token;
-  };
-
-  return next();
-});
+app.use(addLoginToContext);
 
 const router = new Router({prefix: '/api'});
 
-router.use(async (ctx, next) => {
-  const header = ctx.request.get('Authorization');
-  if (!header) return next();
-
-  return next();
-});
+router.use(updateTokenExpiration);
 
 router.post('/login', login);
 
 router.get('/oauth/:provider', oauth);
 router.post('/oauth_callback', handleMongooseValidationError, oauthCallback);
 
-router.get('/me', me);
+router.get('/me', mustBeAuthenticated, me);
 
 app.use(router.routes());
 
