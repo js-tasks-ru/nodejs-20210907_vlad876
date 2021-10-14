@@ -1,3 +1,6 @@
+const path = require('path');
+require('dotenv').config({path: path.join(__dirname, '../../.env')});
+
 module.exports = {
   mongodb: {
     uri: (process.env.NODE_ENV === 'test') ?
@@ -36,7 +39,7 @@ module.exports = {
     },
   },
   mailer: {
-    user: '',
-    password: '',
+    user: process.env.MAILER_USER,
+    password: process.env.MAILER_PASSWORD,
   },
 };
