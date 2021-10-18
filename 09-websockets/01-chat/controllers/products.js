@@ -22,7 +22,7 @@ module.exports.productsByQuery = async function productsByQuery(ctx, next) {
 };
 
 module.exports.productList = async function productList(ctx, next) {
-  const products = await Product.find().limit(20);
+  const products = await Product.find({}).limit(20);
   ctx.body = {products: products.map(mapProduct)};
 };
 
